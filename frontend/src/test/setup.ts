@@ -6,7 +6,8 @@ class ResizeObserverStub {
   disconnect() {}
 }
 
-if (!("ResizeObserver" in window)) {
+if (!("ResizeObserver" in globalThis)) {
   // Recharts needs ResizeObserver in jsdom.
-  window.ResizeObserver = ResizeObserverStub as unknown as typeof ResizeObserver;
+  (globalThis as unknown as Record<string, unknown>)["ResizeObserver"] =
+    ResizeObserverStub;
 }

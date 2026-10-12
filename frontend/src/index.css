@@ -3,8 +3,9 @@
 @tailwind utilities;
 
 :root {
-  color: #192638;
-  background: #F6F8FB;
+  color: #252B27;
+  background: #F5F3EC;
+  font-synthesis: none;
 }
 
 * {
@@ -19,7 +20,13 @@ body,
 
 body {
   margin: 0;
+  background: #F5F3EC;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
 }
+
+::selection { background: #DDE8DD; color: #252B27; }
+
+button, input, select, textarea { font: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   * {

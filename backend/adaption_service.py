@@ -173,6 +173,36 @@ def start_run(job_id: str, confirm: bool, api_key: str, client_factory=_client_f
         raise mapped from exc
 
 
+def start_persisted_run(dataset_id: str, max_rows: int, api_key: str, client_factory=_client_factory) -> tuple[str | None, str]:
+    try:
+        run = client_factory(api_key).datasets.adapt(dataset_id, column_mapping=COLUMN_MAPPING, job_specification={"max_rows": max_rows})
+        return getattr(run, "run_id", None), str(getattr(run, "status", "running"))
+    except Exception as exc:
+        raise _map_sdk_error(exc) from exc
+
+
+def refresh_persisted_job(dataset_id: str, api_key: str, client_factory=_client_factory) -> tuple[str, str, str | None]:
+    try:
+        status = client_factory(api_key).datasets.get_status(dataset_id)
+        value = str(getattr(status, "status", "unknown"))
+        if value in FAILED_STATUSES:
+            error_data = getattr(status, "error_data", None)
+            return value, "failed", getattr(error_data, "message", None) if error_data else "Adaption reported a failed status."
+        if value in DOWNLOADABLE_STATUSES:
+            return value, "succeeded", None
+        return value, "running", None
+    except Exception as exc:
+        raise _map_sdk_error(exc) from exc
+
+
+def download_persisted_job(dataset_id: str, api_key: str, client_factory=_client_factory) -> bytes:
+    try:
+        response = client_factory(api_key).datasets.download(dataset_id, file_format="jsonl")
+        return response.read() if hasattr(response, "read") else bytes(response) if isinstance(response, (bytes, bytearray)) else str(response).encode("utf-8")
+    except Exception as exc:
+        raise _map_sdk_error(exc) from exc
+
+
 def refresh_job(job_id: str, api_key: str, client_factory=_client_factory) -> AdaptionJob:
     job = get_job(job_id)
     try:
