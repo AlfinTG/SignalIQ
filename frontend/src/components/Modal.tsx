@@ -18,7 +18,7 @@ export function Modal({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-navy-950/40 p-4 sm:items-center" role="presentation">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#252B27]/40 p-4 sm:items-center" role="presentation">
       <button type="button" className="absolute inset-0 cursor-default" aria-label="Close dialog" onClick={onClose} />
       <div
         role="dialog"

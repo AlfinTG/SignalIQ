@@ -151,6 +151,7 @@ def _coerce_confidence(value: object) -> float | None:
 def analyze_with_gemini(items: list[FeedbackIn], api_key: str, model: str) -> tuple[list[AnalysisItem], list[str], str]:
     try:
         from google import genai
+        from google.genai import types
     except ImportError as exc:
         raise GeminiAnalysisError("provider_unavailable", "The Gemini SDK is not installed.") from exc
 
@@ -159,16 +160,16 @@ def analyze_with_gemini(items: list[FeedbackIn], api_key: str, model: str) -> tu
     expected = {item.id for item in items}
 
     try:
-        client = genai.Client(api_key=api_key, http_options={"timeout": 45_000})
+        client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=45_000))
         response = client.models.generate_content(
             model=model,
             contents=prompt,
-            config={
-                "temperature": 0.1,
-                "system_instruction": SYSTEM_INSTRUCTION,
-                "response_mime_type": "application/json",
-                "response_json_schema": RESPONSE_SCHEMA,
-            },
+            config=types.GenerateContentConfig(
+                temperature=0.1,
+                system_instruction=SYSTEM_INSTRUCTION,
+                response_mime_type="application/json",
+                response_schema=RESPONSE_SCHEMA,
+            ),
         )
     except Exception as exc:
         name = exc.__class__.__name__

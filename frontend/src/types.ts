@@ -2,7 +2,7 @@ export type Sentiment = "positive" | "neutral" | "negative" | "unclassified";
 export type Severity = "low" | "medium" | "high" | "unknown";
 export type AnalysisMode = "live-ai" | "demo-rules" | "unclassified";
 export type IssueStatus = "Open" | "In progress" | "Resolved";
-export type SourceLabel = "review" | "survey" | "support" | "imported" | "manual";
+export type SourceLabel = "review" | "survey" | "support" | "imported" | "manual" | "widget" | "hosted" | "api";
 
 export interface FeedbackRecord {
   id: string;
@@ -20,6 +20,8 @@ export interface FeedbackRecord {
   analysisMode: AnalysisMode;
   analyzedAt: string | null;
   isSample: boolean;
+  formId?: string;
+  customData?: Record<string, unknown>;
 }
 
 export interface IssueState {
@@ -34,6 +36,52 @@ export interface Workspace {
   feedback: FeedbackRecord[];
   issues: Record<string, IssueState>;
   isSampleWorkspace: boolean;
+}
+
+export interface Project {
+  id: string;
+  workspace_id: string;
+  name: string;
+  url: string | null;
+  created_at: string;
+}
+
+export interface FormField {
+  id: string;
+  type: "text" | "textarea" | "rating" | "category" | "email";
+  label: string;
+  required: boolean;
+  placeholder?: string;
+  options?: string[];
+}
+
+export interface FeedbackForm {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string;
+  fields: FormField[];
+  accent_color: string;
+  submit_text: string;
+  success_message: string;
+  status: "draft" | "published" | "archived";
+  template: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ActionItem {
+  id: string;
+  project_id: string;
+  issue_key: string;
+  title: string;
+  proposed_fix: string | null;
+  assignee: string | null;
+  due_date: string | null;
+  status: "open" | "in_progress" | "completed";
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Filters {

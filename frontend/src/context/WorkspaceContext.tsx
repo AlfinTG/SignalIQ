@@ -7,21 +7,37 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { analyzeLive, ApiError, fetchHealth } from "../api";
-import { applyAnalysisItems, unclassifiedRecords } from "../lib/analysis";
-import { demoAnalyzeMany } from "../lib/demoAnalysis";
+import {
+  analyzePersistentFeedback,
+  ApiError,
+  createProject,
+  createProjectAction,
+  createPersistentFeedback,
+  importPersistentFeedback,
+  fetchHealth,
+  fetchProjectActions,
+  fetchProjectForms,
+  fetchProjects,
+  fetchPersistentFeedback,
+  fetchProjectSubmissions,
+  updateActionItem,
+  updatePersistentIssue,
+} from "../api";
+import { unclassifiedRecords } from "../lib/analysis";
 import { applyFilters } from "../lib/filters";
 import { createId } from "../lib/ids";
 import { computeMetrics } from "../lib/metrics";
-import { loadWorkspace, saveWorkspace } from "../lib/persistence";
 import { groupIssues, highPriorityCount } from "../lib/priority";
 import { createSampleFeedback } from "../lib/sampleData";
 import type {
+  ActionItem,
+  FeedbackForm,
   FeedbackRecord,
   Filters,
   HealthStatus,
   IssueState,
   IssueStatus,
+  Project,
   Workspace,
 } from "../types";
 import { EMPTY_FILTERS } from "../types";
@@ -36,6 +52,16 @@ interface AnalyzeProgress {
 
 interface WorkspaceContextValue {
   workspace: Workspace;
+  projects: Project[];
+  currentProject: Project | null;
+  setCurrentProject: (proj: Project) => void;
+  createNewProject: (name: string, url?: string) => Promise<Project>;
+  forms: FeedbackForm[];
+  refreshForms: () => Promise<void>;
+  actions: ActionItem[];
+  refreshActions: () => Promise<void>;
+  addAction: (payload: { issue_key: string; title: string; proposed_fix?: string; assignee?: string; due_date?: string; notes?: string }) => Promise<ActionItem>;
+  updateAction: (actionId: string, payload: Partial<ActionItem>) => Promise<ActionItem>;
   filters: Filters;
   setFilters: (next: Filters | ((current: Filters) => Filters)) => void;
   filtered: FeedbackRecord[];
@@ -55,6 +81,7 @@ interface WorkspaceContextValue {
   setIssueStatus: (issueKey: string, status: IssueStatus) => void;
   dismissNotice: () => void;
   dismissError: () => void;
+  refreshSubmissions: () => Promise<void>;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -62,14 +89,15 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 const BATCH = 16;
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const initial = loadWorkspace();
-  const [workspace, setWorkspace] = useState<Workspace>(initial.workspace);
+  const [workspace, setWorkspace] = useState<Workspace>({ version: 1, feedback: [], issues: {}, isSampleWorkspace: false });
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [currentProject, setCurrentProjectState] = useState<Project | null>(null);
+  const [forms, setForms] = useState<FeedbackForm[]>([]);
+  const [actions, setActions] = useState<ActionItem[]>([]);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-  const [storageError, setStorageError] = useState<string | null>(initial.storageError);
-  const [recovered] = useState(initial.recovered);
-  const [notice, setNotice] = useState<string | null>(
-    initial.recovered ? "Previous workspace data could not be read. Demonstration data was loaded instead." : null,
-  );
+  const [storageError] = useState<string | null>(null);
+  const [recovered] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
@@ -81,11 +109,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     message: "",
   });
 
-  useEffect(() => {
-    const saveError = saveWorkspace(workspace);
-    setStorageError(saveError);
-  }, [workspace]);
-
+  // Load backend health and projects
   useEffect(() => {
     let cancelled = false;
     fetchHealth()
@@ -97,12 +121,107 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {
         if (!cancelled) {
-          setHealthError("Backend health check failed. Live analysis and Adaption Lab need the API running.");
+          setHealthError("Backend is offline. Using local storage mode.");
         }
       });
+
+    fetchProjects()
+      .then((projs) => {
+        if (!cancelled && projs.length > 0) {
+          setProjects(projs);
+          setCurrentProjectState((curr) => curr || projs[0] || null);
+        }
+      })
+      .catch(() => {
+      /* Legacy project endpoints are not the signed-in persistence source. */
+      });
+
+    fetchPersistentFeedback()
+      .then((feedback) => {
+        if (!cancelled) setWorkspace((current) => ({ ...current, feedback, isSampleWorkspace: false }));
+      })
+      .catch((requestError: unknown) => {
+        if (!cancelled) setError(requestError instanceof ApiError ? requestError.message : "Your persistent workspace could not be loaded.");
+      });
+
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  const refreshForms = useCallback(async () => {
+    if (!currentProject) return;
+    try {
+      const f = await fetchProjectForms(currentProject.id);
+      setForms(f);
+    } catch {
+      /* ignore */
+    }
+  }, [currentProject]);
+
+  const refreshActions = useCallback(async () => {
+    if (!currentProject) return;
+    try {
+      const a = await fetchProjectActions(currentProject.id);
+      setActions(a);
+    } catch {
+      /* ignore */
+    }
+  }, [currentProject]);
+
+  const refreshSubmissions = useCallback(async () => {
+    if (!currentProject) return;
+    try {
+      const subs = await fetchProjectSubmissions(currentProject.id);
+      if (subs.length > 0) {
+        setWorkspace((curr) => ({
+          ...curr,
+          feedback: subs,
+          isSampleWorkspace: false,
+        }));
+      }
+    } catch {
+      /* fallback to local workspace */
+    }
+  }, [currentProject]);
+
+  // When active project changes, load forms, actions, and submissions
+  useEffect(() => {
+    if (currentProject) {
+      void refreshForms();
+      void refreshActions();
+      void refreshSubmissions();
+    }
+  }, [currentProject, refreshForms, refreshActions, refreshSubmissions]);
+
+  const setCurrentProject = useCallback((proj: Project) => {
+    setCurrentProjectState(proj);
+  }, []);
+
+  const createNewProject = useCallback(async (name: string, url?: string) => {
+    const proj = await createProject(name, url);
+    setProjects((prev) => [proj, ...prev]);
+    setCurrentProjectState(proj);
+    setNotice(`Project “${proj.name}” created.`);
+    return proj;
+  }, []);
+
+  const addAction = useCallback(
+    async (payload: { issue_key: string; title: string; proposed_fix?: string; assignee?: string; due_date?: string; notes?: string }) => {
+      if (!currentProject) throw new Error("No active project");
+      const created = await createProjectAction(currentProject.id, payload);
+      setActions((prev) => [created, ...prev]);
+      setNotice(`Action item created: ${created.title}`);
+      return created;
+    },
+    [currentProject],
+  );
+
+  const updateAction = useCallback(async (actionId: string, payload: Partial<ActionItem>) => {
+    const updated = await updateActionItem(actionId, payload);
+    setActions((prev) => prev.map((a) => (a.id === actionId ? updated : a)));
+    setNotice(`Action updated: ${updated.title}`);
+    return updated;
   }, []);
 
   const filtered = useMemo(() => applyFilters(workspace.feedback, filters), [workspace.feedback, filters]);
@@ -145,11 +264,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         analyzedAt: null,
         isSample: false,
       };
-      updateWorkspace((current) => ({
-        ...current,
-        isSampleWorkspace: false,
-        feedback: [record, ...current.feedback],
-      }));
+
+      void createPersistentFeedback({ text: record.text, source: record.source, date: record.date ?? "", rating: record.rating })
+        .then((saved) => updateWorkspace((current) => ({ ...current, isSampleWorkspace: false, feedback: [saved, ...current.feedback] })))
+        .catch((requestError: unknown) => setError(requestError instanceof ApiError ? requestError.message : "Feedback could not be saved."));
       return record;
     },
     [updateWorkspace],
@@ -157,11 +275,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const importRecords = useCallback(
     (records: FeedbackRecord[], replaceSample: boolean) => {
-      updateWorkspace((current) => ({
-        ...current,
-        isSampleWorkspace: false,
-        feedback: replaceSample && current.isSampleWorkspace ? records : [...records, ...current.feedback],
-      }));
+      void importPersistentFeedback(records)
+        .then((saved) => updateWorkspace((current) => ({ ...current, isSampleWorkspace: false, feedback: replaceSample && current.isSampleWorkspace ? saved : [...saved, ...current.feedback] })))
+        .catch((requestError: unknown) => setError(requestError instanceof ApiError ? requestError.message : "Feedback import could not be saved."));
     },
     [updateWorkspace],
   );
@@ -185,27 +301,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         message: preferLive ? "Requesting live AI analysis…" : "Running labelled demo analysis…",
       });
 
-      const applyLocalDemo = () => {
-        const analyzed = demoAnalyzeMany(subset);
-        const map = new Map(analyzed.map((record) => [record.id, record]));
-        updateWorkspace((current) => ({
-          ...current,
-          feedback: current.feedback.map((record) => map.get(record.id) ?? record),
-        }));
+      const applyPersistentAnalysis = async (mode: "live-ai" | "demo-rules") => {
+        const response = await analyzePersistentFeedback(subset.map((record) => record.id), mode);
+        const map = new Map(response.updated.map((record) => [record.id, record]));
+        updateWorkspace((current) => ({ ...current, feedback: current.feedback.map((record) => map.get(record.id) ?? record) }));
         setAnalyzeProgress({
           active: false,
-          mode: "demo-rules",
-          processed: subset.length,
+          mode,
+          processed: response.updated.length,
           total: subset.length,
           message: "",
         });
-        setNotice(
-          "Demo analysis used. Results come from deterministic keyword rules, not a live model. Configure GEMINI_API_KEY on the backend for live AI.",
-        );
+        setNotice(response.warning ?? (mode === "demo-rules" ? "Demo analysis used. Results come from deterministic keyword rules, not a live model." : `Live Gemini classified ${response.updated.length} record(s).`));
       };
 
       if (!preferLive) {
-        applyLocalDemo();
+        await applyPersistentAnalysis("demo-rules");
         return;
       }
 
@@ -220,9 +331,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             total: subset.length,
             message: `Live AI batch ${Math.floor(i / BATCH) + 1} of ${Math.ceil(subset.length / BATCH)}…`,
           });
-          const response = await analyzeLive(batch);
-          const applied = applyAnalysisItems(batch, response.results);
-          merged.push(...applied.filter((record) => record.analysisMode === "live-ai"));
+          const response = await analyzePersistentFeedback(batch.map((record) => record.id), "live-ai");
+          merged.push(...response.updated);
           if (response.warning) setNotice(response.warning);
         }
         const map = new Map(merged.map((record) => [record.id, record]));
@@ -237,16 +347,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             ? `Live AI classified ${merged.length} record(s). ${failed} could not be validated from the model response and were left unchanged.`
             : `Live AI classified ${merged.length} record(s).`,
         );
+
       } catch (caught) {
-        const missingKey = caught instanceof ApiError && caught.code === "missing_gemini_key";
-        if (missingKey) {
-          applyLocalDemo();
-          setError(null);
-          setNotice(
-            "Live AI is not configured (no GEMINI_API_KEY). Labelled demo analysis was used instead. Results are keyword rules, not a live model.",
-          );
-          return;
-        }
         const message =
           caught instanceof ApiError
             ? caught.message
@@ -264,40 +366,60 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [updateWorkspace, workspace.feedback],
   );
 
-  const saveIssue = useCallback((issueKey: string) => {
-    updateWorkspace((current) => {
-      const existing = current.issues[issueKey];
-      const next: IssueState = {
-        issueKey,
-        status: existing?.status ?? "Open",
-        saved: true,
-        updatedAt: new Date().toISOString(),
-      };
-      return { ...current, issues: { ...current.issues, [issueKey]: next } };
-    });
-    setNotice("Issue saved in this browser. It is not synced across devices.");
-  }, [updateWorkspace]);
+  const saveIssue = useCallback(
+    (issueKey: string) => {
+      const existing = workspace.issues[issueKey];
+      const status = existing?.status ?? "Open";
+      void updatePersistentIssue(issueKey, status).catch((requestError: unknown) => setError(requestError instanceof ApiError ? requestError.message : "Issue state could not be saved."));
+      updateWorkspace((current) => {
+        const existing = current.issues[issueKey];
+        const next: IssueState = {
+          issueKey,
+          status: existing?.status ?? "Open",
+          saved: true,
+          updatedAt: new Date().toISOString(),
+        };
+        return { ...current, issues: { ...current.issues, [issueKey]: next } };
+      });
+      setNotice("Issue saved in this browser.");
+    },
+    [updateWorkspace, workspace.issues],
+  );
 
-  const setIssueStatus = useCallback((issueKey: string, status: IssueStatus) => {
-    updateWorkspace((current) => {
-      const existing = current.issues[issueKey];
-      return {
-        ...current,
-        issues: {
-          ...current.issues,
-          [issueKey]: {
-            issueKey,
-            status,
-            saved: existing?.saved ?? true,
-            updatedAt: new Date().toISOString(),
+  const setIssueStatus = useCallback(
+    (issueKey: string, status: IssueStatus) => {
+      void updatePersistentIssue(issueKey, status).catch((requestError: unknown) => setError(requestError instanceof ApiError ? requestError.message : "Issue status could not be saved."));
+      updateWorkspace((current) => {
+        const existing = current.issues[issueKey];
+        return {
+          ...current,
+          issues: {
+            ...current.issues,
+            [issueKey]: {
+              issueKey,
+              status,
+              saved: existing?.saved ?? true,
+              updatedAt: new Date().toISOString(),
+            },
           },
-        },
-      };
-    });
-  }, [updateWorkspace]);
+        };
+      });
+    },
+    [updateWorkspace],
+  );
 
   const value: WorkspaceContextValue = {
     workspace,
+    projects,
+    currentProject,
+    setCurrentProject,
+    createNewProject,
+    forms,
+    refreshForms,
+    actions,
+    refreshActions,
+    addAction,
+    updateAction,
     filters,
     setFilters,
     filtered,
@@ -317,6 +439,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setIssueStatus,
     dismissNotice: () => setNotice(null),
     dismissError: () => setError(null),
+    refreshSubmissions,
   };
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

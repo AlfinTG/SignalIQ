@@ -8,7 +8,7 @@ Use the smallest architecture that supports a working, honest demo and a simple 
 
 ### Frontend
 - React + Vite + TypeScript + Tailwind CSS + Recharts + Lucide.
-- Browser `localStorage` for the current workspace (`signaliq.workspace.v1`).
+- Browser `localStorage` for sample/imported workspace state (`signaliq.workspace.v1`).
 - Typed client for `/api/*`.
 - Pure TypeScript functions for filtering, metrics, grouping, priority, CSV, and reports.
 
@@ -16,12 +16,12 @@ Use the smallest architecture that supports a working, honest demo and a simple 
 - FastAPI + Pydantic.
 - Server-side Gemini (`google-genai`) for live analysis.
 - Server-side Adaption Python SDK for Adaptive Data.
-- No primary database. The browser is the source of truth for feedback.
+- SQLite (`signaliq.db`) for projects, forms, public submissions, and action items. It is suitable for a one-service demo, not multi-instance deployment.
 - FastAPI serves the compiled frontend in production. Vite proxies `/api` in development.
 
 ## 3. Analysis flow
 
-1. Browser loads sample data or persisted workspace.
+1. Browser loads sample data or persisted workspace; public feedback is persisted by the backend.
 2. User imports or adds comments.
 3. Frontend submits a bounded batch to `POST /api/analyze`.
 4. Backend redacts obvious emails/phones, then calls Gemini with structured JSON output.
@@ -46,6 +46,10 @@ Jobs live in an in-memory registry and are lost on process restart.
 
 - `GET /api/health`
 - `POST /api/analyze`
+- `GET/POST /api/projects` and `GET /api/projects/{project_id}/forms`
+- `GET /api/public/forms/{form_id}` and `POST /api/public/submit`
+- `GET /api/projects/{project_id}/submissions`
+- `GET/POST /api/projects/{project_id}/actions` and `PATCH /api/actions/{action_id}`
 - `POST /api/adaption/estimate`
 - `POST /api/adaption/run`
 - `GET /api/adaption/jobs/{job_id}`
@@ -62,3 +66,10 @@ Priority = 0.40 × Frequency + 0.30 × Negative Sentiment Rate + 0.20 × Trend +
 When trend cannot be calculated, remaining weights are redistributed proportionally and the UI discloses that trend is unavailable.
 
 These weights are a documented design choice, not a validated industry standard.
+
+## 8. Public ingestion guardrails
+
+- Payloads are validated by Pydantic; custom data is limited to 20 simple fields and 500 characters per text value.
+- Required form fields are also checked server-side.
+- A browser `Origin` must match the project website URL when one is configured; server-to-server calls without an Origin remain supported.
+- The current abuse limit is 12 submissions per client per 60 seconds, held in process memory. It is deliberately disclosed as a demo safeguard rather than a distributed production rate limiter.

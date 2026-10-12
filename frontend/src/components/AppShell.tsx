@@ -1,30 +1,113 @@
-import { Activity, FlaskConical, LayoutDashboard, ListChecks, Menu, MessagesSquare, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import {
+  Activity,
+  Compass,
+  FlaskConical,
+  FolderGit2,
+  LayoutDashboard,
+  ListChecks,
+  Menu,
+  MessagesSquare,
+  Plus,
+  Settings,
+  FileText,
+  X,
+} from "lucide-react";
+import { useState, type ReactNode, type FormEvent } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useWorkspace } from "../context/WorkspaceContext";
+import { Modal } from "./Modal";
 
 const NAV = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/explorer", label: "Feedback Explorer", icon: MessagesSquare },
-  { to: "/insights", label: "Insights & Actions", icon: ListChecks },
-  { to: "/adaption-lab", label: "Adaption Lab", icon: FlaskConical },
+  { to: "/", label: "Overview", icon: LayoutDashboard, end: true },
+  { to: "/explorer", label: "Feedback", icon: MessagesSquare },
+  { to: "/insights", label: "Insights", icon: Compass },
+  { to: "/priorities", label: "Priorities & Actions", icon: ListChecks },
+  { to: "/reports", label: "Reports", icon: FileText },
+  { to: "/quality", label: "Data Quality", icon: FlaskConical },
+  { to: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function AppShell() {
-  const { notice, error, storageError, health, healthError, analyzeProgress, dismissNotice, dismissError, workspace } =
-    useWorkspace();
+  const {
+    notice,
+    error,
+    storageError,
+    health,
+    healthError,
+    analyzeProgress,
+    dismissNotice,
+    dismissError,
+    workspace,
+    projects,
+    currentProject,
+    setCurrentProject,
+    createNewProject,
+  } = useWorkspace();
+
   const [open, setOpen] = useState(false);
+  const [showNewProjModal, setShowNewProjModal] = useState(false);
+  const [newProjName, setNewProjName] = useState("");
+  const [newProjUrl, setNewProjUrl] = useState("");
+  const [creatingProj, setCreatingProj] = useState(false);
+
+  async function handleCreateProject(e: FormEvent) {
+    e.preventDefault();
+    if (!newProjName.trim()) return;
+    setCreatingProj(true);
+    try {
+      await createNewProject(newProjName.trim(), newProjUrl.trim() || undefined);
+      setShowNewProjModal(false);
+      setNewProjName("");
+      setNewProjUrl("");
+    } finally {
+      setCreatingProj(false);
+    }
+  }
 
   const sidebar = (
-    <div className="flex h-full flex-col bg-navy-950 text-slate-200">
+    <div className="flex h-full flex-col border-r border-line bg-[#2C3931] text-stone-100">
+      {/* Brand Header */}
       <div className="border-b border-white/10 px-5 py-5">
         <div className="flex items-center gap-2">
-          <Activity className="h-5 w-5 text-brand-500" aria-hidden />
-          <span className="text-lg font-semibold tracking-tight text-white">SignalIQ</span>
+          <Activity className="h-5 w-5 text-[#C8DCC8]" aria-hidden />
+          <span className="text-lg font-bold tracking-tight text-white">SignalIQ</span>
         </div>
-        <p className="mt-1 text-xs text-slate-400">Customer Intelligence Platform</p>
-        <p className="mt-2 text-[11px] leading-relaxed text-slate-500">Find the signal. Fix the problem.</p>
+        <p className="mt-0.5 text-xs text-stone-300">Customer Intelligence Platform</p>
+        <p className="mt-1 text-[11px] leading-relaxed text-stone-400">Find the signal. Fix the problem.</p>
+
+        {/* Project Switcher */}
+        <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-2">
+          <div className="flex items-center justify-between text-[11px] font-semibold text-stone-300">
+            <span>ACTIVE PROJECT</span>
+            <button
+              type="button"
+              onClick={() => setShowNewProjModal(true)}
+              className="flex items-center gap-1 text-[10px] text-[#C8DCC8] hover:text-white"
+            >
+              <Plus className="h-3 w-3" /> New
+            </button>
+          </div>
+          <div className="mt-1.5 flex items-center gap-2">
+            <FolderGit2 className="h-4 w-4 shrink-0 text-[#C8DCC8]" />
+            <select
+              value={currentProject?.id || ""}
+              onChange={(e) => {
+                const target = projects.find((p) => p.id === e.target.value);
+                if (target) setCurrentProject(target);
+              }}
+              className="w-full truncate rounded bg-transparent text-xs font-semibold text-white focus:outline-none"
+            >
+              {projects.map((p) => (
+                <option key={p.id} value={p.id} className="bg-[#2C3931] text-white">
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
+
+      {/* Primary Navigation */}
       <nav className="flex-1 space-y-1 px-3 py-4" aria-label="Primary">
         {NAV.map((item) => (
           <NavLink
@@ -33,8 +116,8 @@ export function AppShell() {
             end={item.end}
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${
-                isActive ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5 hover:text-white"
+              `flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition ${
+                isActive ? "bg-[#DDE8DD] text-[#264A3D] font-semibold" : "text-stone-300 hover:bg-white/10 hover:text-white"
               }`
             }
           >
@@ -43,36 +126,52 @@ export function AppShell() {
           </NavLink>
         ))}
       </nav>
-      <div className="space-y-2 border-t border-white/10 px-5 py-4 text-xs text-slate-400">
-        <p>{workspace.feedback.length} records in this browser</p>
-        <p>
-          Gemini: {health?.gemini_configured ? "configured" : "not configured"}
+
+      {/* System Status Footer */}
+      <div className="space-y-2 border-t border-white/10 px-5 py-4 text-xs text-stone-300">
+        <p className="font-medium text-stone-100">{workspace.feedback.length} submissions loaded</p>
+        <p className="text-[11px] leading-relaxed">
+          AI: {health?.gemini_configured ? "Gemini Live" : "Demo Rules"}
           <br />
-          Adaption: {health?.adaption_configured ? "configured" : "not configured"}
+          Adaption: {health?.adaption_configured ? "Active" : "Not configured"}
         </p>
-        {workspace.isSampleWorkspace ? <p className="text-amber-200">Demonstration dataset</p> : null}
+        {workspace.isSampleWorkspace ? (
+          <p className="rounded bg-[#B98232]/20 px-2 py-0.5 text-[11px] text-[#F9DEAE]">Sample Dataset</p>
+        ) : null}
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#F6F8FB] lg:flex">
-      <aside className="hidden w-60 shrink-0 lg:block">{sidebar}</aside>
+    <div className="min-h-screen bg-canvas lg:flex">
+      <aside className="hidden w-64 shrink-0 lg:block">{sidebar}</aside>
       {open ? (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <button type="button" className="absolute inset-0 bg-navy-950/50" aria-label="Close menu" onClick={() => setOpen(false)} />
+          <button
+            type="button"
+            className="absolute inset-0 bg-[#252B27]/50"
+            aria-label="Close menu"
+            onClick={() => setOpen(false)}
+          />
           <div className="relative h-full w-64">{sidebar}</div>
         </div>
       ) : null}
+
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-line bg-white px-4 py-3 lg:hidden">
-          <div className="flex items-center gap-2 font-semibold">
+        <header className="flex items-center justify-between border-b border-line bg-surface px-4 py-3 lg:hidden">
+          <div className="flex items-center gap-2 font-bold text-ink">
             <Activity className="h-4 w-4 text-brand-600" /> SignalIQ
           </div>
-          <button type="button" className="rounded-md p-2" onClick={() => setOpen((value) => !value)} aria-label="Open menu">
+          <button
+            type="button"
+            className="rounded-md p-2"
+            onClick={() => setOpen((value) => !value)}
+            aria-label="Open menu"
+          >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </header>
+
         <div className="space-y-2 px-4 pt-4 lg:px-8">
           {storageError ? <Banner tone="warn">{storageError}</Banner> : null}
           {healthError ? <Banner tone="warn">{healthError}</Banner> : null}
@@ -92,10 +191,62 @@ export function AppShell() {
             </Banner>
           ) : null}
         </div>
+
         <main className="flex-1 px-4 py-6 lg:px-8">
           <Outlet />
         </main>
       </div>
+
+      {/* New Project Modal */}
+      {showNewProjModal ? (
+        <Modal title="Create New Project" onClose={() => setShowNewProjModal(false)}>
+          <form onSubmit={handleCreateProject} className="space-y-4 text-xs font-sans">
+            <p className="text-slate-600">
+              Each project represents a website, software application, or product for which you want to collect and analyze customer feedback.
+            </p>
+
+            <div>
+              <label className="block font-semibold text-slate-700">Project Name *</label>
+              <input
+                type="text"
+                required
+                value={newProjName}
+                onChange={(e) => setNewProjName(e.target.value)}
+                placeholder="e.g., My Storefront, iOS Mobile App, Documentation"
+                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-xs text-ink"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700">Website or App URL (optional)</label>
+              <input
+                type="url"
+                value={newProjUrl}
+                onChange={(e) => setNewProjUrl(e.target.value)}
+                placeholder="https://example.com"
+                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-xs text-ink"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowNewProjModal(false)}
+                className="rounded-lg border border-line px-4 py-2 text-xs font-semibold text-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={creatingProj || !newProjName.trim()}
+                className="rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+              >
+                {creatingProj ? "Creating..." : "Create Project"}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      ) : null}
     </div>
   );
 }
