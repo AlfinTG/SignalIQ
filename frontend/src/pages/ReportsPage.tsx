@@ -18,16 +18,13 @@ export function ReportsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-7">
+    <div className="app-page">
       <header className="flex flex-wrap items-end justify-between gap-4 border-b border-line pb-5">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-700">Stakeholder brief</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-ink">Reports</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-muted">Create a scoped, evidence-aware report from the feedback currently in view.</p>
+          <p className="page-kicker">Stakeholder brief</p><h1 className="page-title">Reports</h1><p className="page-copy">Create a scoped, evidence-aware report from the feedback currently in view.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => downloadText("signaliq-feedback.csv", feedbackToCsv(filtered), "text/csv;charset=utf-8")} className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-[#F5F3EC]">Download CSV</button>
-          <button type="button" onClick={downloadReport} className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Download HTML report</button>
+          <button type="button" onClick={() => downloadText("signaliq-feedback.csv", feedbackToCsv(filtered), "text/csv;charset=utf-8")} className="secondary-button">Download CSV</button><button type="button" onClick={downloadReport} className="primary-button">Download HTML report</button>
         </div>
       </header>
 
@@ -48,7 +45,7 @@ export function ReportsPage() {
               {!groups.length ? <li className="text-sm text-ink-muted">No grouped findings are available for this scope. Import or analyze feedback first.</li> : null}
             </ol>
           </div>
-          <aside className="bg-[#EDEAE1] p-5">
+          <aside className="panel-muted p-5">
             <h2 className="font-semibold text-ink">Scope and limitations</h2>
             <ul className="mt-3 space-y-2 text-sm leading-6 text-ink-muted">
               <li>Priority is a transparent 40/30/20/10 heuristic, not a business-impact prediction.</li>

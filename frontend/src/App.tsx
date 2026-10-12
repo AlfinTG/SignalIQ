@@ -28,6 +28,7 @@ export default function App() {
         <Route path="/sign-in" element={<AuthPage />} />
         <Route path="/sign-up" element={<AuthPage />} />
         <Route path="/recover" element={<AuthPage />} />
+        <Route path="/reset-password" element={<AuthPage />} />
         {/* Standalone public form for external end users & embedded widgets */}
         <Route path="/f/:formId" element={<PublicFormPage />} />
 

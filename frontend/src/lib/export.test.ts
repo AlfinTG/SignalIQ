@@ -22,4 +22,13 @@ describe("export", () => {
     expect(csv.split("\n")[0]).toContain("issueKey");
     expect(csv).toContain(groups[0]!.issueKey);
   });
+
+  it("guards spreadsheet formulas in issue exports", () => {
+    const records = createSampleFeedback().map((record, index) =>
+      index === 0 ? { ...record, issueKey: "=danger", category: "+formula" } : record,
+    );
+    const csv = issuesToCsv(groupIssues(records), {});
+    expect(csv).toContain("'=danger");
+    expect(csv).toContain("'+formula");
+  });
 });

@@ -18,5 +18,8 @@ Thumbs.db
 .vscode/
 *.local
 backend/.adaption_tmp/
+signaliq.db
+signaliq.db-shm
+signaliq.db-wal
 .tmp/
 .python-version

@@ -22,14 +22,14 @@ export function FilterBar({
     filters.dateTo;
 
   return (
-    <div className="grid gap-3 rounded-xl border border-line bg-white p-4 md:grid-cols-2 xl:grid-cols-6">
+    <div className="grid gap-3 rounded-2xl border border-line bg-stone/70 p-4 md:grid-cols-2 xl:grid-cols-6">
       <label className="block text-sm xl:col-span-2">
         <span className="mb-1 block text-ink-muted">Search</span>
         <input
           value={filters.search}
           onChange={(event) => onChange({ ...filters, search: event.target.value })}
           placeholder="Text, issue, or category"
-          className="w-full rounded-lg border border-line px-3 py-2 text-sm"
+          className="field mt-1"
         />
       </label>
       <label className="block text-sm">
@@ -37,7 +37,7 @@ export function FilterBar({
         <select
           value={filters.sentiment}
           onChange={(event) => onChange({ ...filters, sentiment: event.target.value as Filters["sentiment"] })}
-          className="w-full rounded-lg border border-line px-3 py-2 text-sm"
+          className="field mt-1"
         >
           <option value="all">All</option>
           <option value="negative">Negative</option>
@@ -51,7 +51,7 @@ export function FilterBar({
         <select
           value={filters.category}
           onChange={(event) => onChange({ ...filters, category: event.target.value })}
-          className="w-full rounded-lg border border-line px-3 py-2 text-sm"
+          className="field mt-1"
         >
           <option value="all">All</option>
           {categories.map((category) => (
@@ -66,7 +66,7 @@ export function FilterBar({
         <select
           value={filters.source}
           onChange={(event) => onChange({ ...filters, source: event.target.value })}
-          className="w-full rounded-lg border border-line px-3 py-2 text-sm"
+          className="field mt-1"
         >
           <option value="all">All</option>
           {sources.map((source) => (
@@ -84,7 +84,7 @@ export function FilterBar({
               type="date"
               value={filters.dateFrom}
               onChange={(event) => onChange({ ...filters, dateFrom: event.target.value })}
-              className="w-full rounded-lg border border-line px-3 py-2 text-sm"
+              className="field mt-1"
             />
           </label>
           <label className="block text-sm">
@@ -93,7 +93,7 @@ export function FilterBar({
               type="date"
               value={filters.dateTo}
               onChange={(event) => onChange({ ...filters, dateTo: event.target.value })}
-              className="w-full rounded-lg border border-line px-3 py-2 text-sm"
+              className="field mt-1"
             />
           </label>
         </div>
@@ -101,7 +101,7 @@ export function FilterBar({
           <button
             type="button"
             onClick={() => onChange(EMPTY_FILTERS)}
-            className="rounded-lg border border-line px-3 py-1.5 text-xs text-ink-muted hover:text-ink"
+            className="rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink-muted hover:text-ink"
           >
             Reset filters
           </button>

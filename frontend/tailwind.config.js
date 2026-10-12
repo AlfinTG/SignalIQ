@@ -5,22 +5,26 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: "#EEF4EC",
-          100: "#DDE8DD",
-          500: "#477B68",
-          600: "#315D4C",
-          700: "#264A3D",
+          50: "#E4EBDD",
+          100: "#D7E3CF",
+          500: "#276148",
+          600: "#174C38",
+          700: "#103A2A",
         },
         ink: {
-          DEFAULT: "#252B27",
-          muted: "#626B63",
+          DEFAULT: "#252923",
+          muted: "#70756D",
         },
-        line: "#DEDCD2",
-        canvas: "#F5F3EC",
+        line: "#DDD9CF",
+        canvas: "#F7F3E8",
         surface: "#FFFEFA",
+        stone: "#ECE8DE",
+        citrus: "#D8F36A",
+        terracotta: "#E8795B",
+        amber: "#B98528",
       },
       boxShadow: {
-        card: "0 1px 2px rgba(37, 43, 39, 0.04), 0 8px 24px rgba(37, 43, 39, 0.035)",
+        card: "0 1px 2px rgba(37, 41, 35, 0.05), 0 12px 30px rgba(37, 41, 35, 0.055)",
       },
       fontFamily: {
         sans: ["Inter", "Segoe UI", "system-ui", "sans-serif"],

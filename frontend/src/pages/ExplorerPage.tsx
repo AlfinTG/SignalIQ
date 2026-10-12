@@ -98,17 +98,17 @@ export function ExplorerPage() {
   const unclassified = workspace.feedback.filter((record) => record.analysisMode === "unclassified").length;
 
   return (
-    <div className="space-y-6">
+    <div className="app-page">
       <div>
-        <h1 className="text-2xl font-semibold text-ink">Feedback Explorer</h1>
-        <p className="mt-1 text-sm text-ink-muted">
+        <p className="page-kicker">Feedback library</p><h1 className="page-title">Feedback Explorer</h1>
+        <p className="page-copy">
           Search, filter, inspect, and analyze comments. Supported CSV columns: text/feedback/comment/review/message/content/description,
           plus optional date, source, and rating.
         </p>
       </div>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <form onSubmit={submitManual} className="space-y-3 rounded-xl border border-line bg-white p-4 shadow-card">
+        <form onSubmit={submitManual} className="panel space-y-3 p-5">
           <h2 className="text-sm font-semibold">Add a comment</h2>
           <label className="block text-sm">
             <span className="mb-1 block text-ink-muted">Feedback text</span>
@@ -116,7 +116,7 @@ export function ExplorerPage() {
               value={form.text}
               onChange={(event) => setForm({ ...form, text: event.target.value })}
               rows={4}
-              className="w-full rounded-lg border border-line px-3 py-2"
+              className="field"
               required
             />
           </label>
@@ -126,7 +126,7 @@ export function ExplorerPage() {
               <select
                 value={form.source}
                 onChange={(event) => setForm({ ...form, source: event.target.value })}
-                className="w-full rounded-lg border border-line px-3 py-2"
+                className="field"
               >
                 <option value="manual">manual</option>
                 <option value="review">review</option>
@@ -140,7 +140,7 @@ export function ExplorerPage() {
                 type="date"
                 value={form.date}
                 onChange={(event) => setForm({ ...form, date: event.target.value })}
-                className="w-full rounded-lg border border-line px-3 py-2"
+                className="field"
               />
             </label>
             <label className="block text-sm">
@@ -148,18 +148,18 @@ export function ExplorerPage() {
               <input
                 value={form.rating}
                 onChange={(event) => setForm({ ...form, rating: event.target.value })}
-                className="w-full rounded-lg border border-line px-3 py-2"
+                className="field"
                 inputMode="decimal"
               />
             </label>
           </div>
           {formError ? <p className="text-sm text-rose-700">{formError}</p> : null}
-          <button type="submit" className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white">
+          <button type="submit" className="primary-button">
             Save comment
           </button>
         </form>
 
-        <div className="space-y-3 rounded-xl border border-line bg-white p-4 shadow-card">
+        <div className="panel space-y-3 p-5">
           <h2 className="text-sm font-semibold">Import CSV</h2>
           <p className="text-sm text-ink-muted">Maximum 2,000 rows. Malformed rows are rejected with reasons; the app will not crash.</p>
           <input

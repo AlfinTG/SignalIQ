@@ -10,19 +10,15 @@ import {
 import {
   analyzePersistentFeedback,
   ApiError,
-  createProject,
-  createProjectAction,
   createPersistentFeedback,
   importPersistentFeedback,
   fetchHealth,
-  fetchProjectActions,
-  fetchProjectForms,
-  fetchProjects,
+  fetchPersistentIssues,
+  fetchWorkspace,
   fetchPersistentFeedback,
-  fetchProjectSubmissions,
-  updateActionItem,
   updatePersistentIssue,
 } from "../api";
+import type { WorkspaceInfo } from "../api";
 import { unclassifiedRecords } from "../lib/analysis";
 import { applyFilters } from "../lib/filters";
 import { createId } from "../lib/ids";
@@ -52,6 +48,7 @@ interface AnalyzeProgress {
 
 interface WorkspaceContextValue {
   workspace: Workspace;
+  currentWorkspace: WorkspaceInfo | null;
   projects: Project[];
   currentProject: Project | null;
   setCurrentProject: (proj: Project) => void;
@@ -90,7 +87,8 @@ const BATCH = 16;
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [workspace, setWorkspace] = useState<Workspace>({ version: 1, feedback: [], issues: {}, isSampleWorkspace: false });
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [currentWorkspace, setCurrentWorkspace] = useState<WorkspaceInfo | null>(null);
+  const [projects] = useState<Project[]>([]);
   const [currentProject, setCurrentProjectState] = useState<Project | null>(null);
   const [forms, setForms] = useState<FeedbackForm[]>([]);
   const [actions, setActions] = useState<ActionItem[]>([]);
@@ -109,7 +107,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     message: "",
   });
 
-  // Load backend health and projects
+  // Load only the authenticated workspace APIs. Project routes are a retired
+  // prototype API and must not be used as a signed-in persistence source.
   useEffect(() => {
     let cancelled = false;
     fetchHealth()
@@ -125,15 +124,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         }
       });
 
-    fetchProjects()
-      .then((projs) => {
-        if (!cancelled && projs.length > 0) {
-          setProjects(projs);
-          setCurrentProjectState((curr) => curr || projs[0] || null);
+    fetchWorkspace()
+      .then((value) => {
+        if (!cancelled) setCurrentWorkspace(value);
+      })
+      .catch((requestError: unknown) => {
+        if (!cancelled) setError(requestError instanceof ApiError ? requestError.message : "Your workspace could not be loaded.");
+      });
+
+    fetchPersistentIssues()
+      .then((issues) => {
+        if (!cancelled) {
+          setWorkspace((current) => ({
+            ...current,
+            issues: Object.fromEntries(issues.map((issue) => [issue.issue_key, {
+              issueKey: issue.issue_key,
+              status: issue.status,
+              saved: true,
+              updatedAt: issue.updated_at,
+            }])),
+          }));
         }
       })
-      .catch(() => {
-      /* Legacy project endpoints are not the signed-in persistence source. */
+      .catch((requestError: unknown) => {
+        if (!cancelled) setError(requestError instanceof ApiError ? requestError.message : "Your saved issue states could not be loaded.");
       });
 
     fetchPersistentFeedback()
@@ -150,78 +164,40 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshForms = useCallback(async () => {
-    if (!currentProject) return;
-    try {
-      const f = await fetchProjectForms(currentProject.id);
-      setForms(f);
-    } catch {
-      /* ignore */
-    }
-  }, [currentProject]);
+    setForms([]);
+  }, []);
 
   const refreshActions = useCallback(async () => {
-    if (!currentProject) return;
-    try {
-      const a = await fetchProjectActions(currentProject.id);
-      setActions(a);
-    } catch {
-      /* ignore */
-    }
-  }, [currentProject]);
+    setActions([]);
+  }, []);
 
   const refreshSubmissions = useCallback(async () => {
-    if (!currentProject) return;
-    try {
-      const subs = await fetchProjectSubmissions(currentProject.id);
-      if (subs.length > 0) {
-        setWorkspace((curr) => ({
-          ...curr,
-          feedback: subs,
-          isSampleWorkspace: false,
-        }));
-      }
-    } catch {
-      /* fallback to local workspace */
-    }
-  }, [currentProject]);
-
-  // When active project changes, load forms, actions, and submissions
-  useEffect(() => {
-    if (currentProject) {
-      void refreshForms();
-      void refreshActions();
-      void refreshSubmissions();
-    }
-  }, [currentProject, refreshForms, refreshActions, refreshSubmissions]);
+    // Legacy project submissions are intentionally unavailable. Authenticated
+    // feedback is loaded through /api/feedback during workspace bootstrap.
+  }, []);
 
   const setCurrentProject = useCallback((proj: Project) => {
     setCurrentProjectState(proj);
   }, []);
 
   const createNewProject = useCallback(async (name: string, url?: string) => {
-    const proj = await createProject(name, url);
-    setProjects((prev) => [proj, ...prev]);
-    setCurrentProjectState(proj);
-    setNotice(`Project “${proj.name}” created.`);
-    return proj;
+    void name;
+    void url;
+    throw new Error("Project management is not available in the authenticated workspace API.");
   }, []);
 
   const addAction = useCallback(
     async (payload: { issue_key: string; title: string; proposed_fix?: string; assignee?: string; due_date?: string; notes?: string }) => {
-      if (!currentProject) throw new Error("No active project");
-      const created = await createProjectAction(currentProject.id, payload);
-      setActions((prev) => [created, ...prev]);
-      setNotice(`Action item created: ${created.title}`);
-      return created;
+      void payload;
+      throw new Error("Action items are not available in the authenticated workspace API.");
     },
-    [currentProject],
+    [],
   );
 
   const updateAction = useCallback(async (actionId: string, payload: Partial<ActionItem>) => {
-    const updated = await updateActionItem(actionId, payload);
-    setActions((prev) => prev.map((a) => (a.id === actionId ? updated : a)));
-    setNotice(`Action updated: ${updated.title}`);
-    return updated;
+    void actionId;
+    void payload;
+    throw new Error("Action items are not available in the authenticated workspace API.");
   }, []);
 
   const filtered = useMemo(() => applyFilters(workspace.feedback, filters), [workspace.feedback, filters]);
@@ -410,6 +386,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const value: WorkspaceContextValue = {
     workspace,
+    currentWorkspace,
     projects,
     currentProject,
     setCurrentProject,

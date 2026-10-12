@@ -43,6 +43,19 @@ export async function fetchHealth(): Promise<HealthStatus> {
   return (await response.json()) as HealthStatus;
 }
 
+export type WorkspaceInfo = {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function fetchWorkspace(): Promise<WorkspaceInfo> {
+  const response = await apiFetch("/api/workspace");
+  if (!response.ok) throw await readError(response);
+  return (await response.json()) as WorkspaceInfo;
+}
+
 type PersistentFeedback = {
   id: string; text: string; source: string; submitted_at: string | null; rating: number | null;
   sentiment: FeedbackRecord["sentiment"]; category: string | null; issue_key: string | null;
@@ -85,6 +98,12 @@ export async function updatePersistentIssue(issueKey: string, status: "Open" | "
   const response = await apiFetch(`/api/issues/${encodeURIComponent(issueKey)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status, notes }) });
   if (!response.ok) throw await readError(response);
   return await response.json() as { issue_key: string; status: "Open" | "In progress" | "Resolved"; updated_at: string };
+}
+
+export async function fetchPersistentIssues(): Promise<Array<{ issue_key: string; status: "Open" | "In progress" | "Resolved"; updated_at: string }>> {
+  const response = await apiFetch("/api/issues");
+  if (!response.ok) throw await readError(response);
+  return (await response.json()) as Array<{ issue_key: string; status: "Open" | "In progress" | "Resolved"; updated_at: string }>;
 }
 
 // --- Projects API ---
