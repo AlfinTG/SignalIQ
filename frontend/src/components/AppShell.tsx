@@ -9,11 +9,13 @@ import {
   MessagesSquare,
   Settings,
   FileText,
+  LogOut,
   X,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useWorkspace } from "../context/WorkspaceContext";
+import { useAuth } from "../context/AuthContext";
 
 const NAV = [
   { to: "/", label: "Overview", icon: LayoutDashboard, end: true },
@@ -26,6 +28,7 @@ const NAV = [
 ];
 
 export function AppShell() {
+  const { signOut } = useAuth();
   const {
     notice,
     error,
@@ -41,30 +44,30 @@ export function AppShell() {
 
   const [open, setOpen] = useState(false);
   const sidebar = (
-    <div className="flex h-full flex-col border-r border-line bg-[#2C3931] text-stone-100">
+    <div className="flex h-full flex-col border-r border-white/10 bg-brand-600 text-stone-100">
       {/* Brand Header */}
-      <div className="border-b border-white/10 px-5 py-5">
-        <div className="flex items-center gap-2">
-          <Activity className="h-5 w-5 text-[#C8DCC8]" aria-hidden />
+      <div className="border-b border-white/10 px-5 py-6">
+        <div className="flex items-center gap-2.5">
+          <span className="grid h-8 w-8 place-items-center rounded-xl bg-citrus text-brand-700"><Activity className="h-4 w-4" aria-hidden /></span>
           <span className="text-lg font-bold tracking-tight text-white">SignalIQ</span>
         </div>
         <p className="mt-0.5 text-xs text-stone-300">Customer Intelligence Platform</p>
         <p className="mt-1 text-[11px] leading-relaxed text-stone-400">Find the signal. Fix the problem.</p>
 
         {/* Authenticated workspace */}
-        <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-2">
+        <div className="mt-5 rounded-xl border border-white/10 bg-white/5 p-3">
           <div className="flex items-center justify-between text-[11px] font-semibold text-stone-300">
             <span>ACTIVE WORKSPACE</span>
           </div>
           <div className="mt-1.5 flex items-center gap-2">
-            <FolderGit2 className="h-4 w-4 shrink-0 text-[#C8DCC8]" />
+            <FolderGit2 className="h-4 w-4 shrink-0 text-citrus" />
             <span className="w-full truncate text-xs font-semibold text-white">{currentWorkspace?.name ?? "Loading workspace…"}</span>
           </div>
         </div>
       </div>
 
       {/* Primary Navigation */}
-      <nav className="flex-1 space-y-1 px-3 py-4" aria-label="Primary">
+      <nav className="flex-1 space-y-1 px-3 py-5" aria-label="Primary">
         {NAV.map((item) => (
           <NavLink
             key={item.to}
@@ -72,8 +75,8 @@ export function AppShell() {
             end={item.end}
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition ${
-                isActive ? "bg-[#DDE8DD] text-[#264A3D] font-semibold" : "text-stone-300 hover:bg-white/10 hover:text-white"
+              `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                isActive ? "bg-citrus text-brand-700 font-bold shadow-sm" : "text-stone-200 hover:bg-white/10 hover:text-white"
               }`
             }
           >
@@ -92,8 +95,11 @@ export function AppShell() {
           Adaption: {health?.adaption_configured ? "Active" : "Not configured"}
         </p>
         {workspace.isSampleWorkspace ? (
-          <p className="rounded bg-[#B98232]/20 px-2 py-0.5 text-[11px] text-[#F9DEAE]">Sample Dataset</p>
+          <p className="rounded-lg bg-citrus/15 px-2 py-1 text-[11px] text-citrus">Sample Dataset</p>
         ) : null}
+        <button type="button" onClick={() => void signOut()} className="flex min-h-9 w-full items-center gap-2 rounded-lg pt-1 text-left text-[11px] font-semibold text-stone-200 hover:text-white">
+          <LogOut className="h-3.5 w-3.5" /> Sign out
+        </button>
       </div>
     </div>
   );
@@ -116,7 +122,7 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-line bg-surface px-4 py-3 lg:hidden">
           <div className="flex items-center gap-2 font-bold text-ink">
-            <Activity className="h-4 w-4 text-brand-600" /> SignalIQ
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-citrus text-brand-700"><Activity className="h-4 w-4" /></span> SignalIQ
           </div>
           <button
             type="button"
@@ -148,7 +154,7 @@ export function AppShell() {
           ) : null}
         </div>
 
-        <main className="flex-1 px-4 py-6 lg:px-8">
+        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
           <Outlet />
         </main>
       </div>
@@ -167,10 +173,10 @@ function Banner({
 }) {
   const cls =
     tone === "error"
-      ? "border-rose-200 bg-rose-50 text-rose-900"
+      ? "border-[#E8795B]/40 bg-[#FFF0EC] text-[#7A321F]"
       : tone === "warn"
-        ? "border-amber-200 bg-amber-50 text-amber-900"
-        : "border-brand-100 bg-brand-50 text-slate-800";
+        ? "border-amber/30 bg-[#FFF8E8] text-[#6E4C12]"
+        : "border-brand-100 bg-brand-50 text-brand-700";
   return (
     <div className={`flex items-start justify-between gap-3 rounded-lg border px-3 py-2 text-sm ${cls}`}>
       <p>{children}</p>

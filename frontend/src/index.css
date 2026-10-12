@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  color: #252B27;
-  background: #F5F3EC;
+  color: #252923;
+  background: #F7F3E8;
   font-synthesis: none;
 }
 
@@ -20,13 +20,28 @@ body,
 
 body {
   margin: 0;
-  background: #F5F3EC;
+  background: #F7F3E8;
   font-family: Inter, "Segoe UI", system-ui, sans-serif;
 }
 
-::selection { background: #DDE8DD; color: #252B27; }
+::selection { background: #D8F36A; color: #103A2A; }
 
 button, input, select, textarea { font: inherit; }
+
+@layer components {
+  .app-page { @apply mx-auto max-w-7xl space-y-6; }
+  .page-kicker { @apply text-[11px] font-bold uppercase tracking-[0.16em] text-brand-700; }
+  .page-title { @apply mt-1 text-2xl font-semibold tracking-[-0.035em] text-ink sm:text-3xl; }
+  .page-copy { @apply mt-2 max-w-3xl text-sm leading-6 text-ink-muted; }
+  .panel { @apply rounded-2xl border border-line bg-surface shadow-card; }
+  .panel-muted { @apply rounded-2xl border border-line; background: #ECE8DE; }
+  .primary-button { @apply inline-flex items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60; }
+  .secondary-button { @apply inline-flex items-center justify-center rounded-xl border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink transition; }
+  .secondary-button:hover { background: #ECE8DE; }
+  .field { @apply mt-1.5 w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted/70; }
+  .field-label { @apply block text-sm font-semibold text-ink; }
+  .metric-label { @apply text-[11px] font-bold uppercase tracking-[0.12em] text-ink-muted; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   * {
