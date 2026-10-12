@@ -1,4 +1,5 @@
 import { uniqueValues } from "../lib/filters";
+import { EMPTY_FILTERS } from "../types";
 import type { Filters, FeedbackRecord } from "../types";
 
 export function FilterBar({
@@ -12,6 +13,14 @@ export function FilterBar({
 }) {
   const categories = uniqueValues(records, "category");
   const sources = uniqueValues(records, "source");
+  const isFiltered =
+    filters.search ||
+    filters.sentiment !== "all" ||
+    filters.category !== "all" ||
+    filters.source !== "all" ||
+    filters.dateFrom ||
+    filters.dateTo;
+
   return (
     <div className="grid gap-3 rounded-xl border border-line bg-white p-4 md:grid-cols-2 xl:grid-cols-6">
       <label className="block text-sm xl:col-span-2">
@@ -67,25 +76,36 @@ export function FilterBar({
           ))}
         </select>
       </label>
-      <div className="grid grid-cols-2 gap-2 xl:col-span-1 md:col-span-2 xl:col-span-2">
-        <label className="block text-sm">
-          <span className="mb-1 block text-ink-muted">From</span>
-          <input
-            type="date"
-            value={filters.dateFrom}
-            onChange={(event) => onChange({ ...filters, dateFrom: event.target.value })}
-            className="w-full rounded-lg border border-line px-3 py-2 text-sm"
-          />
-        </label>
-        <label className="block text-sm">
-          <span className="mb-1 block text-ink-muted">To</span>
-          <input
-            type="date"
-            value={filters.dateTo}
-            onChange={(event) => onChange({ ...filters, dateTo: event.target.value })}
-            className="w-full rounded-lg border border-line px-3 py-2 text-sm"
-          />
-        </label>
+      <div className="md:col-span-2 xl:col-span-1 flex flex-col gap-2">
+        <div className="grid grid-cols-2 gap-2">
+          <label className="block text-sm">
+            <span className="mb-1 block text-ink-muted">From</span>
+            <input
+              type="date"
+              value={filters.dateFrom}
+              onChange={(event) => onChange({ ...filters, dateFrom: event.target.value })}
+              className="w-full rounded-lg border border-line px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block text-ink-muted">To</span>
+            <input
+              type="date"
+              value={filters.dateTo}
+              onChange={(event) => onChange({ ...filters, dateTo: event.target.value })}
+              className="w-full rounded-lg border border-line px-3 py-2 text-sm"
+            />
+          </label>
+        </div>
+        {isFiltered ? (
+          <button
+            type="button"
+            onClick={() => onChange(EMPTY_FILTERS)}
+            className="rounded-lg border border-line px-3 py-1.5 text-xs text-ink-muted hover:text-ink"
+          >
+            Reset filters
+          </button>
+        ) : null}
       </div>
     </div>
   );

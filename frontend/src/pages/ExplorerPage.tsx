@@ -216,14 +216,6 @@ export function ExplorerPage() {
         >
           Run labelled demo analysis
         </button>
-        <button
-          type="button"
-          disabled={analyzeProgress.active}
-          onClick={() => void analyzeRecords(undefined, true)}
-          className="rounded-lg border border-line bg-white px-3 py-2 text-sm"
-        >
-          Retry live AI
-        </button>
       </div>
 
       <FilterBar
