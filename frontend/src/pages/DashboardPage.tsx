@@ -23,7 +23,6 @@ import {
   ArrowRight,
   Code2,
   Layers,
-  Radio,
   Sparkles,
 } from "lucide-react";
 
@@ -35,8 +34,7 @@ export function DashboardPage() {
     setFilters,
     loadSample,
     startEmpty,
-    currentProject,
-    forms,
+    currentWorkspace,
     actions,
     updateAction,
   } = useWorkspace();
@@ -93,7 +91,7 @@ export function DashboardPage() {
               <Sparkles className="h-3.5 w-3.5" />
               Intelligence Dashboard
             </span>
-            <span className="text-xs text-ink-muted">· {currentProject?.name}</span>
+            <span className="text-xs text-ink-muted">· {currentWorkspace?.name ?? "Workspace"}</span>
           </div>
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink">Customer Intelligence Overview</h1>
           <p className="mt-0.5 text-xs text-ink-muted">
@@ -271,25 +269,22 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* Form & Widget Status Box */}
+          {/* Workspace Status Box */}
           <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50/70 p-4">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-800">
-              <span className="flex items-center gap-1.5">
-                <Radio className="h-3.5 w-3.5 text-emerald-600 animate-pulse" />
-                <span>Collection Status</span>
-              </span>
+              <span>Workspace status</span>
               <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-emerald-800">
-                {forms.some((f) => f.status === "published") ? "Live" : "Draft"}
+                Scoped
               </span>
             </div>
             <p className="mt-1 text-[11px] text-slate-500">
-              {forms.length} form(s) configured for {currentProject?.name}.
+              Feedback and saved issue states are private to this authenticated workspace.
             </p>
             <Link
-              to="/installation"
+              to="/explorer"
               className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700"
             >
-              Get website embed code →
+              Review feedback →
             </Link>
           </div>
         </div>

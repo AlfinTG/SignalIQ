@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from backend.config import Settings
 
 
 def test_health_does_not_leak_keys(client: TestClient, monkeypatch) -> None:
@@ -33,3 +34,11 @@ def test_health_reports_missing_keys(client: TestClient, monkeypatch) -> None:
     assert body["gemini_configured"] is False
     assert body["adaption_configured"] is False
     assert body["gemini_model"] is None
+
+
+def test_cors_origins_require_explicit_values() -> None:
+    assert Settings(cors_origins="").cors_origin_list == []
+    assert Settings(cors_origins="https://app.example, http://localhost:5173/").cors_origin_list == [
+        "https://app.example",
+        "http://localhost:5173",
+    ]

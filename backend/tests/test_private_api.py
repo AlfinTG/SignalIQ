@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
@@ -52,6 +53,7 @@ def test_live_analysis_never_silently_falls_back_to_demo_rules(client: TestClien
     now = datetime.now(UTC)
     monkeypatch.setattr(private_api, "ensure_workspace", lambda _: {"id": workspace_id, "name": "Private", "created_at": now, "updated_at": now})
     monkeypatch.setattr(private_api, "feedback_by_ids", lambda *_: [_row(record_id, workspace_id)])
+    monkeypatch.setattr(private_api, "get_settings", lambda: SimpleNamespace(gemini_configured=False))
     app.dependency_overrides[get_current_principal] = lambda: Principal(user_id=user_id, email="owner@example.test")
     try:
         response = client.post("/api/feedback/analyze", json={"record_ids": [str(record_id)], "mode": "live-ai"})

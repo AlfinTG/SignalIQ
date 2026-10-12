@@ -7,15 +7,13 @@ import {
   ListChecks,
   Menu,
   MessagesSquare,
-  Plus,
   Settings,
   FileText,
   X,
 } from "lucide-react";
-import { useState, type ReactNode, type FormEvent } from "react";
+import { useState, type ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useWorkspace } from "../context/WorkspaceContext";
-import { Modal } from "./Modal";
 
 const NAV = [
   { to: "/", label: "Overview", icon: LayoutDashboard, end: true },
@@ -38,32 +36,10 @@ export function AppShell() {
     dismissNotice,
     dismissError,
     workspace,
-    projects,
-    currentProject,
-    setCurrentProject,
-    createNewProject,
+    currentWorkspace,
   } = useWorkspace();
 
   const [open, setOpen] = useState(false);
-  const [showNewProjModal, setShowNewProjModal] = useState(false);
-  const [newProjName, setNewProjName] = useState("");
-  const [newProjUrl, setNewProjUrl] = useState("");
-  const [creatingProj, setCreatingProj] = useState(false);
-
-  async function handleCreateProject(e: FormEvent) {
-    e.preventDefault();
-    if (!newProjName.trim()) return;
-    setCreatingProj(true);
-    try {
-      await createNewProject(newProjName.trim(), newProjUrl.trim() || undefined);
-      setShowNewProjModal(false);
-      setNewProjName("");
-      setNewProjUrl("");
-    } finally {
-      setCreatingProj(false);
-    }
-  }
-
   const sidebar = (
     <div className="flex h-full flex-col border-r border-line bg-[#2C3931] text-stone-100">
       {/* Brand Header */}
@@ -75,34 +51,14 @@ export function AppShell() {
         <p className="mt-0.5 text-xs text-stone-300">Customer Intelligence Platform</p>
         <p className="mt-1 text-[11px] leading-relaxed text-stone-400">Find the signal. Fix the problem.</p>
 
-        {/* Project Switcher */}
+        {/* Authenticated workspace */}
         <div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-2">
           <div className="flex items-center justify-between text-[11px] font-semibold text-stone-300">
-            <span>ACTIVE PROJECT</span>
-            <button
-              type="button"
-              onClick={() => setShowNewProjModal(true)}
-              className="flex items-center gap-1 text-[10px] text-[#C8DCC8] hover:text-white"
-            >
-              <Plus className="h-3 w-3" /> New
-            </button>
+            <span>ACTIVE WORKSPACE</span>
           </div>
           <div className="mt-1.5 flex items-center gap-2">
             <FolderGit2 className="h-4 w-4 shrink-0 text-[#C8DCC8]" />
-            <select
-              value={currentProject?.id || ""}
-              onChange={(e) => {
-                const target = projects.find((p) => p.id === e.target.value);
-                if (target) setCurrentProject(target);
-              }}
-              className="w-full truncate rounded bg-transparent text-xs font-semibold text-white focus:outline-none"
-            >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id} className="bg-[#2C3931] text-white">
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            <span className="w-full truncate text-xs font-semibold text-white">{currentWorkspace?.name ?? "Loading workspace…"}</span>
           </div>
         </div>
       </div>
@@ -196,57 +152,6 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
-
-      {/* New Project Modal */}
-      {showNewProjModal ? (
-        <Modal title="Create New Project" onClose={() => setShowNewProjModal(false)}>
-          <form onSubmit={handleCreateProject} className="space-y-4 text-xs font-sans">
-            <p className="text-slate-600">
-              Each project represents a website, software application, or product for which you want to collect and analyze customer feedback.
-            </p>
-
-            <div>
-              <label className="block font-semibold text-slate-700">Project Name *</label>
-              <input
-                type="text"
-                required
-                value={newProjName}
-                onChange={(e) => setNewProjName(e.target.value)}
-                placeholder="e.g., My Storefront, iOS Mobile App, Documentation"
-                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-xs text-ink"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700">Website or App URL (optional)</label>
-              <input
-                type="url"
-                value={newProjUrl}
-                onChange={(e) => setNewProjUrl(e.target.value)}
-                placeholder="https://example.com"
-                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-xs text-ink"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowNewProjModal(false)}
-                className="rounded-lg border border-line px-4 py-2 text-xs font-semibold text-slate-700"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={creatingProj || !newProjName.trim()}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
-              >
-                {creatingProj ? "Creating..." : "Create Project"}
-              </button>
-            </div>
-          </form>
-        </Modal>
-      ) : null}
     </div>
   );
 }

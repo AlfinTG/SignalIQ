@@ -68,6 +68,7 @@ load_dotenv(ROOT / ".env")
 
 app = FastAPI(title="SignalIQ", version="1.0.0")
 app.include_router(private_router)
+settings = get_settings()
 
 _RETIRED_PRIVATE_PREFIXES = ("/api/projects", "/api/forms", "/api/actions")
 
@@ -91,10 +92,11 @@ _SUBMISSION_WINDOW_SECONDS = 60
 _SUBMISSION_LIMIT = 12
 _submission_attempts: Dict[str, List[float]] = {}
 
-# Allow all origins for the public widget and hosted forms
+# Cross-origin browser access is opt-in. Same-origin production requests and
+# Vite's development proxy do not need an entry here.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

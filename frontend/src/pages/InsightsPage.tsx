@@ -6,19 +6,13 @@ import { useDashboardStats, useWorkspace } from "../context/WorkspaceContext";
 import { feedbackToCsv } from "../lib/csv";
 import { downloadText, issuesToCsv, reportFromRecords } from "../lib/export";
 import type { IssueGroup, IssueStatus } from "../types";
-import { ClipboardList, Plus, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 export function InsightsPage() {
-  const { workspace, filtered, filters, setFilters, saveIssue, setIssueStatus, addAction, actions } =
+  const { workspace, filtered, filters, setFilters, saveIssue, setIssueStatus } =
     useWorkspace();
   const { groups } = useDashboardStats();
   const [selected, setSelected] = useState<IssueGroup | null>(null);
-  const [actionTargetGroup, setActionTargetGroup] = useState<IssueGroup | null>(null);
-  const [actionTitle, setActionTitle] = useState("");
-  const [actionFix, setActionFix] = useState("");
-  const [actionAssignee, setActionAssignee] = useState("");
-  const [actionDueDate, setActionDueDate] = useState("");
-  const [actionNotes, setActionNotes] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "saved">("all");
 
   const visible = useMemo(() => {
@@ -40,28 +34,6 @@ export function InsightsPage() {
       reportFromRecords(filtered, filters, workspace.issues),
       "text/html;charset=utf-8",
     );
-  }
-
-  function openActionModal(group: IssueGroup) {
-    setActionTargetGroup(group);
-    setActionTitle(`Fix: ${group.title}`);
-    setActionFix(group.suggestedAction || "");
-    setActionAssignee("");
-    setActionDueDate("");
-    setActionNotes(`Identified from ${group.count} customer comments (${group.negativeCount} negative).`);
-  }
-
-  async function handleSaveAction() {
-    if (!actionTargetGroup || !actionTitle.trim()) return;
-    await addAction({
-      issue_key: actionTargetGroup.issueKey,
-      title: actionTitle.trim(),
-      proposed_fix: actionFix.trim(),
-      assignee: actionAssignee.trim() || undefined,
-      due_date: actionDueDate.trim() || undefined,
-      notes: actionNotes.trim() || undefined,
-    });
-    setActionTargetGroup(null);
   }
 
   return (
@@ -130,8 +102,6 @@ export function InsightsPage() {
       <ul className="space-y-4">
         {visible.map((group) => {
           const state = workspace.issues[group.issueKey];
-          const linkedActions = actions.filter((a) => a.issue_key === group.issueKey);
-
           return (
             <li key={group.issueKey} className="rounded-2xl border border-line bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line/60 pb-3">
@@ -164,23 +134,6 @@ export function InsightsPage() {
                 </p>
               </div>
 
-              {/* Linked Action items badges */}
-              {linkedActions.length > 0 ? (
-                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 p-2 text-xs">
-                  <ClipboardList className="h-3.5 w-3.5 text-brand-600" />
-                  <span className="font-semibold text-slate-700">Actions ({linkedActions.length}):</span>
-                  {linkedActions.map((act) => (
-                    <span
-                      key={act.id}
-                      className="inline-flex items-center gap-1 rounded bg-white px-2 py-0.5 text-[11px] font-medium border border-slate-200"
-                    >
-                      {act.title}
-                      <span className="text-[10px] text-slate-400">({act.status})</span>
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line/60 pt-3">
                 <button
                   type="button"
@@ -188,15 +141,6 @@ export function InsightsPage() {
                   onClick={() => setSelected(group)}
                 >
                   View Supporting Evidence
-                </button>
-
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-brand-100 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100"
-                  onClick={() => openActionModal(group)}
-                >
-                  <Plus className="h-3 w-3" />
-                  Create Action Item
                 </button>
 
                 <button
@@ -223,84 +167,6 @@ export function InsightsPage() {
         })}
       </ul>
 
-      {/* Action Item Creation Modal */}
-      {actionTargetGroup ? (
-        <Modal title={`Create Action: ${actionTargetGroup.title}`} onClose={() => setActionTargetGroup(null)}>
-          <div className="space-y-4 text-xs font-sans">
-            <div>
-              <label className="block font-semibold text-slate-700">Action Title</label>
-              <input
-                type="text"
-                value={actionTitle}
-                onChange={(e) => setActionTitle(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-xs text-ink"
-                placeholder="e.g., Fix gateway retry duplicate charge"
-              />
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700">Proposed Engineering Fix</label>
-              <textarea
-                rows={3}
-                value={actionFix}
-                onChange={(e) => setActionFix(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-xs text-ink"
-                placeholder="Describe the solution or PR details..."
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block font-semibold text-slate-700">Assignee</label>
-                <input
-                  type="text"
-                  value={actionAssignee}
-                  onChange={(e) => setActionAssignee(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-xs text-ink"
-                  placeholder="e.g. Alex (Backend Lead)"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700">Due Date</label>
-                <input
-                  type="date"
-                  value={actionDueDate}
-                  onChange={(e) => setActionDueDate(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-xs text-ink"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block font-semibold text-slate-700">Internal Notes</label>
-              <input
-                type="text"
-                value={actionNotes}
-                onChange={(e) => setActionNotes(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-xs text-ink"
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setActionTargetGroup(null)}
-                className="rounded-lg border border-line px-4 py-2 text-xs font-semibold text-slate-700"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveAction}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700"
-              >
-                Save Action Item
-              </button>
-            </div>
-          </div>
-        </Modal>
-      ) : null}
 
       {/* Evidence Inspection Modal */}
       {selected ? (

@@ -1,5 +1,6 @@
 import { computeMetrics } from "./metrics";
 import { groupIssues } from "./priority";
+import { csvEscape } from "./csv";
 import type { FeedbackRecord, Filters, IssueGroup, IssueState } from "../types";
 
 export function escapeHtml(value: string): string {
@@ -99,7 +100,7 @@ export function issuesToCsv(groups: IssueGroup[], states: Record<string, IssueSt
       state?.saved ? "true" : "false",
       group.suggestedAction,
     ];
-    return cells.map((cell) => (/[",\n]/.test(cell) ? `"${cell.replaceAll('"', '""')}"` : cell)).join(",");
+    return cells.map(csvEscape).join(",");
   });
   return `${[header, ...rows].join("\n")}\n`;
 }
