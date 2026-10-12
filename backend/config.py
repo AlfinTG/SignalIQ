@@ -21,7 +21,9 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_jwt_issuer: str = ""
     supabase_jwt_audience: str = "authenticated"
-    cors_origins: str = ""
+    # Cross-origin access is only needed by the deployed Vercel frontend.
+    # Deployments can override this with a comma-separated allowlist.
+    cors_origins: str = "https://signal-iq-hazel.vercel.app"
 
     @property
     def gemini_configured(self) -> bool:

@@ -38,7 +38,28 @@ def test_health_reports_missing_keys(client: TestClient, monkeypatch) -> None:
 
 def test_cors_origins_require_explicit_values() -> None:
     assert Settings(cors_origins="").cors_origin_list == []
+    assert Settings().cors_origin_list == ["https://signal-iq-hazel.vercel.app"]
     assert Settings(cors_origins="https://app.example, http://localhost:5173/").cors_origin_list == [
         "https://app.example",
         "http://localhost:5173",
     ]
+
+
+def test_cors_allows_only_the_deployed_frontend(client: TestClient) -> None:
+    allowed = client.options(
+        "/api/health",
+        headers={
+            "Origin": "https://signal-iq-hazel.vercel.app",
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "authorization",
+        },
+    )
+    assert allowed.status_code == 200
+    assert allowed.headers["access-control-allow-origin"] == "https://signal-iq-hazel.vercel.app"
+
+    blocked = client.options(
+        "/api/health",
+        headers={"Origin": "https://untrusted.example", "Access-Control-Request-Method": "GET"},
+    )
+    assert blocked.status_code == 400
+    assert "access-control-allow-origin" not in blocked.headers
