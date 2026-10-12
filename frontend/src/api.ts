@@ -9,6 +9,18 @@ import type {
 import type { TaskExample } from "./lib/adaptionDataset";
 import { authHeaders } from "./auth";
 
+const configuredApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+
+/**
+ * Resolves a backend path against the optional public API origin. When no
+ * origin is configured, keep the relative path so Vite's local /api proxy is
+ * used during development.
+ */
+export function resolveApiUrl(path: string, baseUrl = configuredApiBaseUrl): string {
+  if (!baseUrl) return path.startsWith("/") ? path : `/${path}`;
+  return `${baseUrl.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -21,7 +33,8 @@ export class ApiError extends Error {
 }
 
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  return fetch(input, { ...init, headers: authHeaders(init?.headers) });
+  const url = typeof input === "string" ? resolveApiUrl(input) : input;
+  return fetch(url, { ...init, headers: authHeaders(init?.headers) });
 }
 
 async function readError(response: Response): Promise<ApiError> {
