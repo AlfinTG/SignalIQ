@@ -4,6 +4,7 @@ import { WorkspaceProvider } from "./context/WorkspaceContext";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ExplorerPage } from "./pages/ExplorerPage";
 import { InsightsPage } from "./pages/InsightsPage";
+import { PrioritiesPage } from "./pages/PrioritiesPage";
 import { LandingPage } from "./pages/LandingPage";
 import { PublicFormPage } from "./pages/PublicFormPage";
 import { ReportsPage } from "./pages/ReportsPage";
@@ -40,7 +41,7 @@ export default function App() {
           <Route path="/installation" element={<UnavailableFeaturePage />} />
           <Route path="/explorer" element={<ExplorerPage />} />
           <Route path="/insights" element={<InsightsPage />} />
-          <Route path="/priorities" element={<InsightsPage />} />
+          <Route path="/priorities" element={<PrioritiesPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/quality" element={<DataQualityPage />} />
           <Route path="/settings" element={<SettingsPage />} />
